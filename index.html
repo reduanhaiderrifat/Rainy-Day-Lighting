@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rain with Clouds and Lightning Animation</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+            background-color: #1a1a1a;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="rainCanvas"></canvas>
+
+    <!-- Rain sound that loops -->
+    <audio id="rainSound" loop autoplay>
+        <source src="10_minutes_Rain_sound_white_noise_for_Relaxation_Meditation(128k).m4a" type="audio/mpeg">
+    </audio>
+
+    <!-- Thunder sound that is played randomly -->
+    <audio id="thunderSound" preload="auto">
+        <source src="Thunder___Sound_effect(128k).m4a" type="audio/mpeg">
+    </audio>
+
+    <script>
+        const canvas = document.getElementById('rainCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas to full window size
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Get sound elements
+        const rainSound = document.getElementById('rainSound');
+        const thunderSound = document.getElementById('thunderSound');
+
+        // Rain object
+        class Raindrop {
+            constructor(x, y, speed, length, opacity) {
+                this.x = x;
+                this.y = y;
+                this.speed = speed;
+                this.length = length;
+                this.opacity = opacity;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x, this.y + this.length);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            update() {
+                this.y += this.speed;
+                if (this.y > canvas.height) {
+                    this.y = canvas.height * 0.33 - this.length; // Reset raindrop to start below cloud level
+                    this.x = Math.random() * canvas.width; // Random x position
+                    this.speed = Math.random() * 5 + 2; // Random speed
+                    this.length = Math.random() * 20 + 10; // Random length
+                    this.opacity = Math.random() * 0.5 + 0.2; // Random opacity
+                }
+                this.draw();
+            }
+        }
+
+        // Cloud object
+        class Cloud {
+            constructor(x, y, size, speed) {
+                this.x = x;
+                this.y = y;
+                this.size = size;
+                this.speed = speed;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, Math.PI * 0.5, Math.PI * 1.5);
+                ctx.arc(this.x + this.size, this.y - this.size, this.size, Math.PI * 1, Math.PI * 1.85);
+                ctx.arc(this.x + this.size * 2, this.y - this.size, this.size, Math.PI * 1.15, Math.PI * 2);
+                ctx.arc(this.x + this.size * 3, this.y, this.size, Math.PI * 1.5, Math.PI * 0.5);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.fill();
+            }
+
+            update() {
+                this.x += this.speed;
+                if (this.x > canvas.width + this.size * 3) {
+                    this.x = -this.size * 3; // Move cloud back to the left when it exits the screen
+                }
+                this.draw();
+            }
+        }
+
+        // Initialize raindrops
+        let raindrops = [];
+        for (let i = 0; i < 300; i++) {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * (canvas.height * 0.67) + (canvas.height * 0.33); // Raindrops start below cloud level
+            const speed = Math.random() * 5 + 2;
+            const length = Math.random() * 20 + 10;
+            const opacity = Math.random() * 0.5 + 0.2;
+            raindrops.push(new Raindrop(x, y, speed, length, opacity));
+        }
+
+        // Initialize clouds
+        let clouds = [];
+        for (let i = 0; i < 5; i++) {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height * 0.2 + 30; // Clouds stay in the upper 20% of the screen
+            const size = Math.random() * 50 + 50;
+            const speed = Math.random() * 2 + 0.5;
+            clouds.push(new Cloud(x, y, size, speed));
+        }
+
+        // Lightning effect
+        let lightningFlashOpacity = 0;
+        let thunderDelay = false; // Prevent multiple thunder sounds from overlapping
+
+        function triggerLightning() {
+            if (Math.random() < 0.01 && !thunderDelay) { // Random chance to trigger lightning, without overlapping thunder
+                lightningFlashOpacity = 1;
+                thunderDelay = true; // Prevent multiple thunders from overlapping
+
+                // Play thunder sound when lightning occurs
+                thunderSound.currentTime = 0; // Reset to start of the sound
+                thunderSound.play();
+
+                // Set delay before allowing another thunder sound
+                setTimeout(() => {
+                    thunderDelay = false;
+                }, 5000); // Delay of 5 seconds before thunder can happen again
+            }
+        }
+
+        function drawLightning() {
+            if (lightningFlashOpacity > 0) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${lightningFlashOpacity})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                lightningFlashOpacity -= 0.05; // Gradually reduce the opacity
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw clouds first
+            clouds.forEach(cloud => cloud.update());
+
+            // Then draw raindrops below clouds
+            raindrops.forEach(raindrop => raindrop.update());
+
+            // Trigger and draw lightning
+            triggerLightning();
+            drawLightning();
+
+            requestAnimationFrame(animate);
+        }
+
+        // Start animation
+        animate();
+
+        // Update canvas size on window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
